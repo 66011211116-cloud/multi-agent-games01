@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>สภาแบ่งเหรียญ — เกมต่อรองและเจรจา</title>
+<link href="https://fonts.googleapis.com/css2?family=Chonburi&family=Prompt:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#ECE8F6;--panel:#FAF9FD;--ink:#2A2144;--mute:#6A6285;--line:#D3CCE6;--gold:#C99A2E;--you:#2B5FA8;--ok:#2F9E8F;--no:#D1495B}
+@media(prefers-color-scheme:dark){:root{--bg:#161222;--panel:#201A31;--ink:#EFEBFA;--mute:#A69FC0;--line:#3A3254;--gold:#E3B54A;--you:#6E9BE0}}
+*{box-sizing:border-box}
+body{margin:0;color:var(--ink);font-family:Prompt,system-ui,sans-serif;line-height:1.6;background:radial-gradient(circle at 50% -10%,color-mix(in srgb,var(--gold) 20%,transparent),transparent 55%),var(--bg);min-height:100vh}
+.wrap{max-width:1000px;margin:0 auto;padding:16px}
+h1{margin:0;font-size:1.6rem}.sub{margin:0 0 12px;color:var(--mute)}
+.top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+#dots{display:flex;gap:5px}.dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--line)}
+.dot.done{background:var(--gold);border-color:var(--gold)}.dot.cur{border-color:var(--ink);transform:scale(1.25)}
+#ev{padding:8px 14px;border-radius:8px;border:1.5px dashed var(--gold);background:color-mix(in srgb,var(--gold) 12%,transparent);margin-bottom:12px;font-size:.95rem}
+#board{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+.card{background:var(--panel);border:2px solid var(--line);border-bottom:6px solid var(--c);border-radius:12px;padding:10px;text-align:center;position:relative;transition:transform .2s,border-color .2s}
+.card.pr{border-color:var(--c);transform:translateY(-4px)}
+.card svg{display:block;margin:0 auto}
+.nm{font-weight:600}.crown{color:var(--gold)}
+.sc{font-size:1.5rem;font-weight:600}
+.coin{display:inline-block;width:15px;height:15px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#F6DD8A,var(--gold));border:1.5px solid #8A6516;vertical-align:-2px;margin-right:4px}
+.hr{color:var(--no);letter-spacing:1px;font-size:.9rem;height:22px}
+.vb{height:22px;font-size:.85rem;color:var(--mute);font-weight:600}
+.say{margin:6px 0 0;font-size:.88rem;background:var(--bg);border-radius:10px;padding:6px 8px;min-height:2.5em;position:relative}
+.say:empty{visibility:hidden}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:14px}
+.stage h2{margin:0 0 8px;font-size:1.15rem}
+.row{display:grid;grid-template-columns:100px 1fr 46px auto auto;gap:8px;align-items:center;margin:6px 0}
+.bar{height:18px;background:var(--bg);border-radius:9px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--c);transition:width .4s}
+.row b{text-align:right}
+input[type=range]{width:100%;accent-color:var(--c)}
+button{font:inherit;cursor:pointer;border:1.5px solid var(--ink);background:transparent;color:var(--ink);border-radius:8px;padding:6px 12px}
+button:hover:not(:disabled){background:var(--ink);color:var(--bg)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid var(--you);outline-offset:2px}
+.go{background:var(--you);border-color:var(--you);color:#fff}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.note{color:var(--mute);font-size:.9rem;margin:4px 0}
+.ok{color:var(--ok);font-weight:600}.no{color:var(--no);font-weight:600}
+#hist{margin:0;padding-left:20px;color:var(--mute);font-size:.9rem}
+#intro{position:fixed;inset:0;background:rgba(22,18,34,.82);display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
+#intro .box{background:var(--panel);border-radius:14px;padding:22px;max-width:520px;max-height:92vh;overflow:auto}
+#intro h1{font-size:1.7rem}#intro ul{padding-left:20px;margin:8px 0}
+.diff button.on{background:var(--ink);color:var(--bg)}
+@media(max-width:560px){.row{grid-template-columns:80px 1fr 36px}.row button{grid-column:1/-1}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+h1,.stage h2{font-family:Chonburi,Georgia,serif;font-weight:400}
+.stage h2{font-size:1.2rem}
+#board{background:linear-gradient(160deg,color-mix(in srgb,#2F9E8F 30%,var(--panel)),color-mix(in srgb,#1d6657 45%,var(--bg)));border:3px solid var(--gold);border-radius:22px;padding:14px;box-shadow:inset 0 0 40px rgba(0,0,0,.18),0 6px 18px rgba(0,0,0,.12)}
+.card{box-shadow:0 3px 8px rgba(0,0,0,.12)}
+.card:hover{transform:translateY(-2px)}
+.card.pr{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 35%,transparent),0 6px 14px rgba(0,0,0,.2)}
+.say::before{content:"";position:absolute;top:-6px;left:50%;margin-left:-6px;border:6px solid transparent;border-top:0;border-bottom-color:var(--bg)}
+.vb .ok,.vb .no{display:inline-block;padding:0 12px;border-radius:99px;color:#fff;font-size:.82rem}
+.vb .ok{background:var(--ok)}.vb .no{background:var(--no)}
+.stage{border-top:4px solid var(--gold);box-shadow:0 4px 14px rgba(0,0,0,.08)}
+.go{background:linear-gradient(180deg,#4B7FCF,var(--you));box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.bar{box-shadow:inset 0 1px 3px rgba(0,0,0,.15)}
+#ev{background:linear-gradient(90deg,color-mix(in srgb,var(--gold) 22%,transparent),transparent)}
+#intro{--ink:#EFEBFA;--mute:#B9B2D3;--panel:#2D2547;--line:#4A3F73;--bg:#161222;--gold:#E3B54A;display:block;padding:0;background:radial-gradient(circle at 50% -5%,rgba(227,181,74,.38),transparent 55%),linear-gradient(180deg,#2A2144,#161222);color:var(--ink);overflow:auto}
+.hero{position:relative;max-width:760px;margin:0 auto;padding:36px 18px 40px;text-align:center}
+#intro .hero h1{font-size:clamp(2.2rem,8vw,3.4rem);margin:4px 0;color:#F6DD8A;text-shadow:0 3px 0 #8A6516}
+.hero .kick{margin:0;color:var(--mute);letter-spacing:.04em}
+.hero .tg{max-width:520px;margin:6px auto 4px;color:var(--ink)}
+.tbl{width:min(100%,420px);margin:6px auto;display:block}
+.roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px;margin:12px 0}
+.rc{background:var(--panel);border-bottom:4px solid var(--c);border-radius:10px;padding:6px 4px;font-size:.88rem}
+.rc svg{display:block;margin:0 auto}
+.how{text-align:left;background:var(--panel);border-radius:12px;padding:12px 16px;margin:10px 0;font-size:.92rem}
+.how ul{margin:0;padding-left:20px}
+.hero .btns{justify-content:center}
+.big{font-size:1.15rem;padding:10px 28px}
+.fc{position:absolute;animation:fl 4s ease-in-out infinite}
+.fc .coin{width:26px;height:26px}
+@keyframes fl{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-14px) rotate(12deg)}}
+@media(prefers-reduced-motion:reduce){*{animation:none!important}}
+
+#board{display:block;position:relative;min-height:690px;padding:0;background:radial-gradient(ellipse at 50% 50%,color-mix(in srgb,var(--gold) 16%,transparent),transparent 65%),linear-gradient(160deg,color-mix(in srgb,#5b4a8a 24%,var(--panel)),var(--panel))}
+#board .seat{position:absolute;width:158px;transform:translate(-50%,-50%);z-index:2}
+#board .seat:hover{transform:translate(-50%,calc(-50% - 2px))}
+#board .seat.pr{transform:translate(-50%,calc(-50% - 6px))}
+.table{position:absolute;left:50%;top:50%;width:46%;height:36%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(ellipse at 50% 40%,#348A71,#1F5646 72%);border:7px solid var(--gold);box-shadow:inset 0 0 44px rgba(0,0,0,.4),0 12px 26px rgba(0,0,0,.3);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;z-index:1}
+.table .sm{color:#CDEBDD}
+.table .pot{font-family:Chonburi,Georgia,serif;font-size:2.3rem;line-height:1.1;color:#F6DD8A;text-shadow:0 2px 0 #8A6516}
+.pile{display:flex;margin-top:6px;padding-left:10px}
+.pile .coin{margin:0 0 0 -8px;width:20px;height:20px;box-shadow:0 2px 3px rgba(0,0,0,.35)}
+@media(max-width:760px){
+#board{min-height:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:14px}
+#board .seat{position:static;width:auto;transform:none!important}
+.table{position:static;transform:none;width:auto;height:auto;grid-column:1/-1;border-radius:24px;padding:10px}
+}
+/* ===== Beautify pass ===== */
+body{background:
+ radial-gradient(circle at 50% -10%,color-mix(in srgb,var(--gold) 26%,transparent),transparent 55%),
+ radial-gradient(circle at 100% 100%,color-mix(in srgb,var(--you) 16%,transparent),transparent 45%),
+ url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44'%3E%3Cpath d='M22 2l20 20-20 20L2 22z' fill='none' stroke='%23C99A2E' stroke-opacity='.1'/%3E%3C/svg%3E"),var(--bg);background-attachment:fixed}
+.wrap{padding:20px 16px 40px}
+.top{padding:14px 18px;background:color-mix(in srgb,var(--panel) 82%,transparent);border:1px solid var(--line);border-radius:18px;box-shadow:0 6px 18px rgba(0,0,0,.1);backdrop-filter:blur(6px)}
+.top h1{font-size:2rem;line-height:1.2;text-shadow:0 2px 0 color-mix(in srgb,var(--gold) 55%,transparent)}
+.top h1::after{content:"";display:block;width:84px;height:3px;margin-top:6px;border-radius:3px;background:linear-gradient(90deg,var(--gold),transparent)}
+.dot{width:16px;height:16px;background:var(--bg);transition:transform .2s,box-shadow .2s}
+.dot.done{background:radial-gradient(circle at 35% 30%,#F6DD8A,var(--gold));border-color:#8A6516}
+.dot.cur{border-color:var(--gold);box-shadow:0 0 0 4px color-mix(in srgb,var(--gold) 32%,transparent)}
+#ev{border:1px solid color-mix(in srgb,var(--gold) 50%,var(--line));border-left:5px solid var(--gold);border-radius:12px;padding:10px 16px}
+#ev::before{content:"\2726";color:var(--gold);margin-right:8px}
+#board{border-radius:28px;box-shadow:0 0 0 7px color-mix(in srgb,var(--gold) 16%,transparent),0 18px 40px rgba(0,0,0,.22),inset 0 0 60px rgba(0,0,0,.12)}
+.table{background:repeating-radial-gradient(circle at 50% 50%,rgba(255,255,255,.04) 0 2px,transparent 2px 6px),radial-gradient(ellipse at 50% 35%,#40a083,#1F5646 72%);border-color:var(--gold);outline:3px solid color-mix(in srgb,var(--gold) 30%,transparent);outline-offset:4px}
+.table::after{content:"";position:absolute;inset:14px;border-radius:50%;border:1.5px dashed rgba(246,221,138,.45);pointer-events:none}
+.card.seat{background:linear-gradient(180deg,color-mix(in srgb,var(--c) 11%,var(--panel)),var(--panel));border:1.5px solid color-mix(in srgb,var(--c) 45%,var(--line));border-bottom:6px solid var(--c);border-radius:18px;box-shadow:0 8px 16px rgba(0,0,0,.16)}
+.card.seat svg{border-radius:50%;background:radial-gradient(circle at 50% 60%,color-mix(in srgb,var(--c) 30%,transparent),transparent 72%);filter:drop-shadow(0 3px 3px rgba(0,0,0,.2))}
+@keyframes glow{0%,100%{box-shadow:0 0 0 3px color-mix(in srgb,var(--c) 30%,transparent),0 10px 20px rgba(0,0,0,.25)}50%{box-shadow:0 0 0 8px color-mix(in srgb,var(--c) 16%,transparent),0 12px 24px rgba(0,0,0,.3)}}
+.card.seat.pr{animation:glow 2.2s ease-in-out infinite}
+.sc{font-family:Chonburi,Georgia,serif;font-weight:400}
+.say{box-shadow:inset 0 0 0 1px var(--line)}
+.stage{padding:20px 22px;border-radius:18px;background:linear-gradient(180deg,color-mix(in srgb,var(--gold) 8%,var(--panel)),var(--panel))}
+.stage h2{display:flex;align-items:center;flex-wrap:wrap;gap:10px;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--line)}
+.stage h2::before{content:"";flex:none;width:11px;height:11px;transform:rotate(45deg);background:var(--gold);box-shadow:0 0 0 3px color-mix(in srgb,var(--gold) 30%,transparent)}
+.bar{height:20px;border-radius:99px;border:1px solid var(--line)}
+.bar i{border-radius:99px;background:linear-gradient(180deg,color-mix(in srgb,var(--c) 68%,#fff),var(--c));box-shadow:inset 0 -3px 0 rgba(0,0,0,.14)}
+input[type=range]{-webkit-appearance:none;appearance:none;height:8px;border-radius:99px;background:linear-gradient(90deg,color-mix(in srgb,var(--c,var(--you)) 45%,var(--bg)),var(--line))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#F6DD8A,var(--gold));border:2px solid #8A6516;box-shadow:0 2px 4px rgba(0,0,0,.3);cursor:grab}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#F6DD8A,var(--gold));border:2px solid #8A6516;cursor:grab}
+button{border-radius:999px;padding:7px 16px;transition:background .15s,color .15s,transform .15s,box-shadow .15s}
+button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 4px 10px rgba(0,0,0,.18)}
+button:active:not(:disabled){transform:translateY(1px);box-shadow:none}
+.go{background:linear-gradient(180deg,#5b8fe0,var(--you) 60%,#244f8c);font-weight:600;text-shadow:0 1px 0 rgba(0,0,0,.25)}
+.wrap>h2{display:flex;align-items:center;gap:10px;font-family:Chonburi,Georgia,serif;font-weight:400;margin:18px 0 8px}
+.wrap>h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--gold),transparent)}
+#hist{list-style:none;padding:0;display:grid;gap:6px;max-height:280px;overflow:auto}
+#hist li{padding:8px 14px;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:10px}
+#intro .hero h1{background:linear-gradient(180deg,#FFF1B8,#E3B54A 55%,#B8842A);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 3px 0 #6b4c10)}
+.hero .kick{display:inline-block;padding:2px 18px;border:1px solid rgba(227,181,74,.5);border-radius:99px;background:rgba(227,181,74,.1);color:#F6DD8A}
+.rc{background:rgba(255,255,255,.06);border:1px solid var(--line);border-bottom:4px solid var(--c);border-radius:14px;padding:10px 4px 8px;transition:transform .2s}
+.rc:hover{transform:translateY(-3px)}
+.how{border:1px solid var(--line)}
+.diff button.on{background:var(--gold);border-color:var(--gold);color:#1b1305;font-weight:600}
+@media(max-width:760px){.table::after{display:none}.top h1{font-size:1.6rem}}
+/* ===== Compact board ===== */
+.card.seat{padding:8px 8px 6px;border-radius:16px}
+.card.seat svg{width:50px;height:54px}
+.card.seat .nm{font-size:.95rem;line-height:1.3}
+.card.seat .sc{font-size:1.2rem;line-height:1.3}
+.card.seat .coin{width:13px;height:13px}
+.hr,.vb{height:auto;min-height:16px;font-size:.78rem;line-height:1.3}
+.say{min-height:2.1em;font-size:.78rem;margin-top:4px;padding:4px 6px}
+@media(min-width:761px){
+#board{min-height:540px}
+#board .seat{width:136px}
+.table{height:32%;width:44%}
+.table .pot{font-size:2rem}
+}
+/* ===== Effects ===== */
+#fx{position:fixed;inset:0;pointer-events:none;z-index:8;overflow:hidden}
+#fx .rain{position:absolute;top:-40px;animation:rain linear forwards}
+#fx .rain .coin{width:22px;height:22px;margin:0}
+#fx .cf{position:absolute;top:-20px;width:9px;height:14px;border-radius:2px;animation:rain linear forwards}
+#fx .fl{position:absolute;transform:translateX(-50%);font-family:Chonburi,Georgia,serif;font-size:1.5rem;color:#F6DD8A;text-shadow:0 2px 0 #8A6516,0 0 10px rgba(0,0,0,.4);animation:flt 1.4s ease-out forwards}
+@keyframes rain{to{transform:translateY(110vh) rotate(600deg)}}
+@keyframes flt{to{transform:translate(-50%,-70px);opacity:0}}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-8px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
+#board.shake{animation:shake .5s}
+#snd{padding:4px 10px}
+/* ===== Premium fantasy board background ===== */
+#board{isolation:isolate;
+ background:
+  radial-gradient(ellipse 30% 36% at 50% 50%,rgba(250,214,110,.46) 0,rgba(227,181,74,.22) 55%,transparent 100%),
+  radial-gradient(ellipse 58% 70% at 50% 50%,rgba(227,181,74,.16),transparent 100%),
+  radial-gradient(ellipse 75% 50% at 50% 0%,rgba(84,112,210,.26),transparent 70%),
+  radial-gradient(circle at 8% 100%,rgba(122,92,199,.30),transparent 52%),
+  radial-gradient(circle at 100% 85%,rgba(40,70,160,.26),transparent 50%),
+  linear-gradient(160deg,#17264f 0%,#2b2058 46%,#0b1130 100%);
+ box-shadow:0 0 0 7px color-mix(in srgb,var(--gold) 16%,transparent),0 24px 54px rgba(0,0,0,.5),0 0 70px rgba(227,181,74,.14)}
+#board::before,#board::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:0}
+#board::before{background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600' fill='none' stroke='%23E3B54A' stroke-width='1.2'%3E%3Ccircle cx='300' cy='300' r='290' stroke-opacity='.24'/%3E%3Ccircle cx='300' cy='300' r='262' stroke-opacity='.16' stroke-dasharray='3 14'/%3E%3Ccircle cx='300' cy='300' r='232' stroke-opacity='.22'/%3E%3Ccircle cx='300' cy='300' r='176' stroke-opacity='.14'/%3E%3Ccircle cx='300' cy='300' r='115' stroke-opacity='.10'/%3E%3Cpath d='M300 70L499 415H101Z' stroke-opacity='.15'/%3E%3Cpath d='M300 530L499 185H101Z' stroke-opacity='.15'/%3E%3Cg fill='%23F6DD8A' fill-opacity='.4' stroke='none'%3E%3Cpath d='M300 2l7 9-7 9-7-9z'/%3E%3Cpath d='M300 580l7 9-7 9-7-9z'/%3E%3Cpath d='M2 300l9-7 9 7-9 7z'/%3E%3Cpath d='M580 300l9-7 9 7-9 7z'/%3E%3C/g%3E%3C/svg%3E") center/min(135%,980px) auto no-repeat;opacity:.9}
+#board::after{
+ background:
+  radial-gradient(circle at 20% 30%,rgba(246,221,138,.85) 0 1.1px,transparent 2.3px) 0 0/230px 190px,
+  radial-gradient(circle at 70% 60%,rgba(190,210,255,.7) 0 1px,transparent 2.1px) 0 0/310px 270px,
+  radial-gradient(circle at 45% 80%,rgba(246,221,138,.6) 0 1.4px,transparent 2.8px) 0 0/410px 350px,
+  radial-gradient(circle at 0 0,rgba(246,221,138,.20),transparent 30%),
+  radial-gradient(circle at 100% 100%,rgba(246,221,138,.14),transparent 30%),
+  radial-gradient(ellipse at 50% 50%,transparent 52%,rgba(3,5,22,.62) 100%);
+ box-shadow:inset 0 0 0 1px rgba(246,221,138,.30),inset 0 16px 28px -16px rgba(246,221,138,.38),inset 0 0 110px rgba(3,5,22,.72)}
+
+/* ===== v2 additions ===== */
+.say small{display:block;color:var(--mute);font-size:.68rem;line-height:1.25;margin-top:2px}
+.card.seat{cursor:pointer}
+#hist{max-height:420px}
+#hist summary{cursor:pointer;font-weight:600}
+#hist .hl{margin-top:6px;font-size:.85rem;display:grid;gap:3px}
+#hist .tl{margin-top:4px;padding-top:4px;border-top:1px dashed var(--line)}
+.tb{width:100%;border-collapse:collapse;font-size:.85rem}
+.tb th,.tb td{padding:5px 8px;border-bottom:1px solid var(--line);text-align:center;vertical-align:top}
+.tb td:first-child,.tb th:first-child{text-align:left}.tb th{color:var(--mute)}.tb small{color:var(--mute)}
+#seed{font:inherit;padding:6px 16px;border-radius:999px;border:1.5px solid var(--line);background:rgba(255,255,255,.08);color:var(--ink);text-align:center;width:210px}
+#modal{position:fixed;inset:0;z-index:12;background:rgba(10,8,22,.72);display:flex;align-items:center;justify-content:center;padding:16px}
+#modal[hidden]{display:none}
+.mbox{background:var(--panel);color:var(--ink);border-radius:16px;padding:20px 22px;max-width:680px;width:100%;max-height:90vh;overflow:auto;border-top:4px solid var(--gold);box-shadow:0 20px 50px rgba(0,0,0,.5)}
+.mbox h2{display:flex;align-items:center;gap:10px;font-family:Chonburi,Georgia,serif;font-weight:400;margin:0 0 8px}
+.mbox svg{width:48px;height:52px}.rl{padding-left:18px;margin:4px 0;font-size:.9rem}
+details>summary{list-style-position:inside}
+#mus{padding:4px 10px}#mus.off{opacity:.45;text-decoration:line-through}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><div><h1>สภาแบ่งเหรียญ</h1><p class="sub" style="margin:0">ห้าฝ่ายแบ่งกองกลาง ต้องได้ 3 จาก 5 เสียง ไม่เช่นนั้นเหรียญสูญหมด</p><p class="note" id="seedtag" style="margin:2px 0 0"></p></div><div style="display:flex;gap:12px;align-items:center"><div id="dots"></div><button id="snd" onclick="toggleSnd()" aria-label="เปิดปิดเสียงเอฟเฟกต์"></button><button id="mus" onclick="toggleMus()" aria-label="เปิดปิดเพลงประกอบ" title="เพลงประกอบ">🎵</button><button onclick="toMenu()">เมนู</button></div></div>
+  <div id="ev"></div>
+  <div id="board"></div>
+  <p class="note" style="text-align:center">คลิกตัวละครบนโต๊ะเพื่อดูรายละเอียดและสถิติ</p>
+  <div class="stage" id="stage"></div>
+  <h2 style="font-size:1rem">ประวัติ</h2>
+  <ol id="hist"></ol>
+</div>
+<div id="intro"><div class="hero">
+  <span class="fc" style="left:6%;top:42px"><span class="coin"></span></span>
+  <span class="fc" style="right:7%;top:90px;animation-delay:-1.5s"><span class="coin"></span></span>
+  <span class="fc" style="left:14%;top:300px;animation-delay:-2.5s"><span class="coin"></span></span>
+  <p class="kick">เกมต่อรองและเจรจา</p>
+  <h1>สภาแบ่งเหรียญ</h1>
+  <p class="tg">ห้าฝ่ายรอบโต๊ะเดียว หนึ่งกองกลาง ต้องได้ 3 เสียงถึงจะผ่าน ใครรอบคอบ ใครหลอกเก่ง ใครจำแม่น คุณต้องอ่านให้ออก</p>
+  <svg class="tbl" viewBox="0 0 320 140" aria-hidden="true"><ellipse cx="160" cy="76" rx="140" ry="52" fill="#245749" stroke="#E3B54A" stroke-width="5"/><ellipse cx="160" cy="76" rx="100" ry="34" fill="none" stroke="#E3B54A" stroke-opacity=".4" stroke-dasharray="4 6"/><g fill="#E3B54A" stroke="#8A6516" stroke-width="2"><circle cx="146" cy="80" r="11"/><circle cx="168" cy="76" r="11"/><circle cx="156" cy="67" r="11"/></g><g stroke="#fff" stroke-width="2"><circle cx="46" cy="76" r="12" fill="#2B5FA8"/><circle cx="108" cy="24" r="12" fill="#7A5CC7"/><circle cx="212" cy="24" r="12" fill="#2F9E8F"/><circle cx="274" cy="76" r="12" fill="#D1495B"/><circle cx="160" cy="128" r="12" fill="#C98A0E"/></g></svg>
+  <p class="note">ทุกเกมจะสุ่มผู้ร่วมโต๊ะ 4 คนจาก 10 คนนี้ พร้อมนิสัยใหม่</p><div class="roster" id="roster"></div>
+  <div class="how" id="how" hidden><ul>
+    <li>10 รอบ ผลัดกันเสนอวิธีแบ่งเหรียญ ข้อเสนอต้องได้ 3 เสียงจาก 5 ถ้าไม่ผ่าน เหรียญรอบนั้นสูญหมด</li>
+    <li><b>ความไว้ใจ</b> (หัวใจใต้ชื่อ) ยิ่งสูง ยิ่งยอมรับส่วนแบ่งน้อยลง ได้จากการโหวตช่วยและแบ่งอย่างเป็นธรรม</li>
+    <li><b>สัญญา</b> ตอนคุณเสนอ สัญญาว่าตอนเสนอครั้งหน้า (อีก 5 รอบ) จะให้ใครอย่างน้อย 10 หรือ 20 เหรียญ เพื่อซื้อเสียงตอนนี้ ผิดสัญญาความไว้ใจจะตกหนัก รอบที่ 6 สัญญาไม่ได้เพราะไม่มีรอบหน้า</li>
+    <li><b>เหตุการณ์</b> แต่ละรอบเปลี่ยนกองกลางหรือมีภาษี/กองทุนช่วยเหลือ</li>
+    <li>ทั้ง 4 ฝ่ายมีนิสัยซ่อนอยู่ และสุ่มใหม่ทุกเกม (มี 12 แบบ) ต้องสังเกตเอง เฉลยตอนจบ</li></ul></div>
+  <p class="note">เลือกระดับความยาก</p>
+  <div class="btns diff" id="diff"></div>
+  <p class="note" id="best"></p>
+  <p class="note">Seed (เว้นว่าง = สุ่ม พิมพ์ซ้ำเพื่อเล่นเงื่อนไขเดิม)</p><input id="seed" maxlength="24" placeholder="เช่น abc123" aria-label="Seed">
+  <p class="note"><label><input type="checkbox" id="rev"> เปิดเผยนิสัยระหว่างเล่น (โหมดฝึก)</label></p>
+  <div class="btns"><button class="go big" onclick="begin()">เข้าสภา</button><button onclick="$('how').hidden=!$('how').hidden">วิธีเล่น</button><button onclick="showTut()">บทสอนเล่น</button><button onclick="showCmp()">รายละเอียดกลยุทธ์</button></div>
+</div></div>
+<div id="modal" hidden><div class="mbox" id="mbox"></div></div>
+<script>
+const A=[
+ {n:'คุณ',c:'#2B5FA8',sk:'#F1C9A0'},
+ {n:'ลุงสมศักดิ์',t:'greedy',c:'#7A5CC7',sk:'#E3B58C',tag:'โลภมาก',d:'อยากได้เกินครึ่ง ตั้งราคาสูงไว้ก่อน และมักโอ้อวดว่าต้องการมากกว่าที่ยอมรับจริง'},
+ {n:'ป้าบัว',t:'fair',c:'#2F9E8F',sk:'#EBC49C',tag:'รักความยุติธรรม',d:'ไม่รับข้อเสนอที่มีใครได้เกินครึ่ง และชอบแบ่งเท่ากัน'},
+ {n:'ครูเอก',t:'grudge',c:'#D1495B',sk:'#D9A87C',tag:'จำแม่น ผูกแค้น',d:'จำคนที่เคยให้เขาน้อยเกินไปสะสมเป็นระดับความแค้น ยิ่งแค้นยิ่งเรียกร้องสูง และถ้าแค้นถึงระดับ 3 จะไม่โหวตให้คนนั้นอีกเลยไม่ว่าจะได้เท่าไร'},
+ {n:'เฮียหมิง',t:'opp',c:'#C98A0E',sk:'#F0D0A8',tag:'ฉวยโอกาส',d:'ถ้าคะแนนตามหลังจะยอมรับน้อยลง และเลือกเสนอให้คนที่จนที่สุด'}];
+const EV=[
+ {k:'normal',t:'วันธรรมดา',d:'กองกลาง 100 เหรียญตามปกติ',pot:100},
+ {k:'gold',t:'ปีทอง',d:'กองกลางมี 150 เหรียญ',pot:150},
+ {k:'lean',t:'ปีแล้ง',d:'กองกลางเหลือ 70 เหรียญ',pot:70},
+ {k:'tax',t:'ภาษีผู้นำ',d:'ผู้นำคะแนนจะถูกหัก 10 เหรียญหลังจบรอบ',pot:100},
+ {k:'aid',t:'กองทุนช่วยเหลือ',d:'ผู้ที่ตามหลังสุดจะได้ 10 เหรียญหลังจบรอบ',pot:100}];
+const HAT=['<path d="M20 44l4 6 4-6z" fill="#fff"/>','<path d="M13 15l3-9 8 6 8-6 3 9z" fill="#E7B93C"/>','<path d="M12 18q12-16 24 0z" fill="#fff" stroke="#2A2144" stroke-width="1.5"/>','<g fill="none" stroke="#2A2144" stroke-width="1.6"><circle cx="18" cy="26" r="4.5"/><circle cx="30" cy="26" r="4.5"/><path d="M22.5 26h3"/></g>','<path d="M12 18q12-14 24 0zM30 18h10" fill="#C98A0E" stroke="#2A2144" stroke-width="1.5"/>',
+'<path d="M9 27q-1-18 15-18t15 18q-5-10-15-10T9 27z" fill="#3B2B2B"/><path d="M33 12l7-3v9zM33 12l-4-5v9z" fill="#B84FB0"/>',
+'<path d="M10 20q14-16 28 0z" fill="#5E8C31"/><circle cx="24" cy="9.5" r="2.6" fill="#fff"/>',
+'<path d="M8 38q-3-27 16-27t16 27q-3-16-16-17T8 38z" fill="#2C2C3A"/>',
+'<path d="M9 27q-1-12 6-15q-5 6-4 15zM39 27q1-12-6-15q5 6 4 15z" fill="#B8B8C8"/><path d="M17 33q7-4 14 0" stroke="#4A4A55" stroke-width="2.6" fill="none" stroke-linecap="round"/>',
+'<path d="M9 20l3-10 5 6 7-9 7 9 5-6 3 10q-15-8-30 0z" fill="#3A2A1A"/>',
+'<circle cx="24" cy="8" r="5.5" fill="#CFCFD6"/><path d="M10 21q14-14 28 0z" fill="#CFCFD6"/><g fill="none" stroke="#2A2144" stroke-width="1.4"><circle cx="18" cy="27" r="4"/><circle cx="30" cy="27" r="4"/></g>'];
+const CH=[
+ {n:'ลุงสมศักดิ์',c:'#7A5CC7',sk:'#E3B58C',h:1},{n:'ป้าบัว',c:'#2F9E8F',sk:'#EBC49C',h:2},
+ {n:'ครูเอก',c:'#D1495B',sk:'#D9A87C',h:3},{n:'เฮียหมิง',c:'#C98A0E',sk:'#F0D0A8',h:4},
+ {n:'น้องมิ้นท์',c:'#B84FB0',sk:'#F6D5B5',h:5},{n:'หมอวิชัย',c:'#5E8C31',sk:'#E3B58C',h:6},
+ {n:'เจ๊ฟ้า',c:'#17A2C6',sk:'#EBC49C',h:7},{n:'อาจารย์ธนา',c:'#6B7A8F',sk:'#D9A87C',h:8},
+ {n:'พี่เก่ง',c:'#A0522D',sk:'#C99A72',h:9},{n:'ยายแก้ว',c:'#E2733A',sk:'#F0D0A8',h:10}];
+A.forEach((a,i)=>a.h=i);
+const MOUTH={n:'M19 34h10',h:'M18 32q6 7 12 0',a:'M18 36q6-5 12 0'};
+const DF={'ง่าย':2,'ปกติ':0,'ยาก':-2},N=10,$=id=>document.getElementById(id);
+function hs(x){let h=1779033703;for(const ch of String(x)){h=Math.imul(h^ch.charCodeAt(0),3432918353);h=h<<13|h>>>19}return (h^h>>>16)>>>0}
+function mk(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+let rng=Math.random,curSeed='',seedN=0;
+let R,sc,disp,G,tr,PO,newP,pb,prop,pr,say,votes,shown,asked,hist,ev,evs,pot,diff='ปกติ',busy,stat;
+let mood=[0,0,0,0,0],quirk=[0,0,0,0,0],moodR=-1;
+let ST,reasons=[],tlog=[];
+const TRAITS={
+ greedy:{tag:'โลภมาก',d:'อยากได้เกินครึ่ง ตั้งราคาสูงไว้ก่อน และมักโอ้อวดว่าต้องการมากกว่าที่ยอมรับจริง'},
+ fair:{tag:'รักความยุติธรรม',d:'ไม่รับข้อเสนอที่มีใครได้เกินครึ่ง และชอบแบ่งเท่ากัน'},
+ grudge:{tag:'จำแม่น ผูกแค้น',d:'จำคนที่เคยให้เขาน้อยเกินไปสะสมเป็นระดับความแค้น ยิ่งแค้นยิ่งเรียกร้องสูง และถ้าแค้นถึงระดับ 3 จะไม่โหวตให้คนนั้นอีกเลยไม่ว่าจะได้เท่าไร'},
+ opp:{tag:'ฉวยโอกาส',d:'ถ้าคะแนนตามหลังจะยอมรับน้อยลง และเลือกเสนอให้คนที่จนที่สุด'},
+ sly:{tag:'ปากหวานก้นเปรี้ยว',d:'บอกว่าขอน้อยนิดเดียว แต่ตอนโหวตเรียกร้องมากกว่าที่พูดเสมอ อย่าเชื่อตัวเลขที่ได้ยิน'},
+ loyal:{tag:'ตอบแทนบุญคุณ',d:'ถ้าไว้ใจคุณมากจะยอมรับน้อยมาก แต่ถ้าไม่ไว้ใจจะเรียกร้องสูงลิ่ว'},
+ generous:{tag:'ใจบุญ',d:'ยอมรับส่วนแบ่งน้อยได้ ขอแค่ผู้เสนอไม่โลภเกินหกสิบเปอร์เซ็นต์ และชอบช่วยคนที่จนที่สุด'},
+ chaos:{tag:'อารมณ์แปรปรวน',d:'ตัดสินใจตามอารมณ์ ข้อเสนอเดียวกันอาจผ่านหรือตกก็ได้ อ่านยากที่สุด'},
+ timid:{tag:'ขี้กลัวล่ม',d:'กลัวเหรียญสูญหมดมาก ยิ่งใกล้จบเกมยิ่งยอมรับเกือบทุกข้อเสนอ แต่ช่วงต้นเกมจะเรื่องมาก'},
+ envy:{tag:'ขี้อิจฉา',d:'ไม่ยอมให้ใครได้มากกว่าตัวเองมากนัก ยอมรับเมื่อได้ใกล้เคียงคนที่ได้มากที่สุดเท่านั้น'},
+ gambler:{tag:'นักเสี่ยงโชค',d:'ชอบก้อนใหญ่ ยอมรับเมื่อตนเองได้มาก หรือมีใครสักคนได้ก้อนโต การแบ่งเท่า ๆ กันทำให้เขาเบื่อ'},
+ toady:{tag:'ประจบผู้นำ',d:'ถ้าผู้เสนอเป็นผู้นำคะแนนจะยอมรับง่ายมาก แต่กับคนอื่นเรียกร้องสูง และชอบเสนอให้ผู้นำก่อน'}};
+const NOSAY={greedy:'น้อยไป!',fair:'ไม่ยุติธรรม',grudge:'ฉันจำได้นะ',opp:'ไม่คุ้มเลย',sly:'ขอคิดดูก่อนนะ',loyal:'เรายังไม่สนิทกันพอ',generous:'ลองแบ่งให้คนอื่นเพิ่มไหม',chaos:'วันนี้ไม่อยากเห็นด้วย',timid:'เสี่ยงล่มเกินไป',envy:'ทำไมเขาได้มากกว่าฉัน',gambler:'ธรรมดาเกิน ไม่สนุก',toady:'ผู้นำยังไม่พอใจเลย'};
+
+function av(i,m){
+  const a=(typeof i==='object'?i:A[i]),br=m==='a'?'<path d="M14 20l7 3M34 20l-7 3" stroke="#2A2144" stroke-width="2.2" stroke-linecap="round"/>':'';
+  return `<svg viewBox="0 0 48 52" width="68" height="72" aria-hidden="true"><path d="M5 52q0-14 19-14t19 14z" fill="${a.c}"/><circle cx="24" cy="26" r="15" fill="${a.sk}"/><circle cx="18" cy="26" r="2" fill="#2A2144"/><circle cx="30" cy="26" r="2" fill="#2A2144"/>${br}<path d="${MOUTH[m]}" stroke="#2A2144" stroke-width="2" fill="none" stroke-linecap="round"/>${HAT[a.h]}</svg>`;
+}
+function diffUI(){
+  $('diff').innerHTML=Object.keys(DF).map(k=>`<button class="${k===diff?'on':''}" onclick="diff='${k}';diffUI()">${k}</button>`).join('');
+  let b='';try{b=localStorage.getItem('hc_best_'+diff);}catch(e){}
+  $('best').textContent=b?`สถิติสูงสุดระดับ${diff}: ${b} เหรียญ`:'';
+}
+function begin(){$('intro').style.display='none';start();}
+function toMenu(){$('intro').style.display='block';diffUI();}
+function roster(){$('roster').innerHTML=[A[0]].concat(CH).map((a,i)=>`<div class="rc" style="--c:${a.c}">${av(a,i?'n':'h')}<b>${a.n}</b><div class="sm" style="color:var(--mute)">${i?'นิสัยปริศนา':'ผู้เล่น'}</div></div>`).join('');}
+function start(){
+  let sd=($('seed')&&$('seed').value.trim())||'';if(!sd)sd=(Date.now()%2176782336).toString(36);
+  curSeed=sd;seedN=hs(sd);rng=mk(seedN);
+  $('seedtag').innerHTML='Seed: <b>'+sd.replace(/[<>&]/g,'')+'</b>';
+  ST=A.map(()=>({yes:0,no:0,prop:0,pass:0,got:0}));tlog=[];reasons=[];
+  R=0;sc=[0,0,0,0,0];disp=[0,0,0,0,0];tr=[5,5,5,5,5];PO=[0,0,0,0,0];stat={ok:0,fail:0};hist=[];busy=false;
+  const pool=Object.keys(TRAITS).sort(()=>rng()-.5);
+  const cast=CH.slice().sort(()=>rng()-.5);
+  for(let i=1;i<5;i++){const k=pool[i-1],c=cast[i-1];Object.assign(A[i],{n:c.n,c:c.c,sk:c.sk,h:c.h,t:k,tag:TRAITS[k].tag,d:TRAITS[k].d});}
+  quirk=quirk.map(()=>rng()*6-3);moodR=-1;
+  G=A.map(()=>[0,0,0,0,0]);
+  evs=[EV[0]];while(evs.length<N){const e=EV[1+rng()*4|0];if(e!==evs[evs.length-1])evs.push(e);}
+  $('hist').innerHTML='';next();
+}
+const avg=()=>sc.reduce((a,b)=>a+b)/5,behind=i=>sc[i]<avg();
+const leader=()=>{const m=Math.max(...sc);const l=sc.map((s,i)=>s===m?i:-1).filter(i=>i>=0);return m>0&&l.length===1?l[0]:-1;};
+const last=()=>{const m=Math.min(...sc);const l=sc.map((s,i)=>s===m?i:-1).filter(i=>i>=0);return l.length===1?l[0]:-1;};
+
+const SEAT=[[50,82],[13,60],[27,19],[73,19],[87,60]];
+function tableHTML(){
+  if(!ev)return '<div class="table"><div class="pot" style="font-size:1.5rem">ปิดประชุม</div></div>';
+  return `<div class="table"><div class="sm">รอบที่ ${R} · ${ev.t}</div><div class="pot">${pot}</div><div class="sm">เหรียญกองกลาง</div><div class="pile">${'<span class="coin"></span>'.repeat(Math.min(9,Math.max(3,Math.round(pot/18))))}</div></div>`;
+}
+function board(){
+  const L=leader();
+  $('dots').innerHTML=Array.from({length:N},(_,i)=>`<span class="dot ${i+1<R?'done':i+1===R?'cur':''}"></span>`).join('');
+  $('ev').innerHTML=ev?`<b>${ev.t}</b> ${ev.d}`:'';
+  $('board').innerHTML=tableHTML()+A.map((a,i)=>{
+    const m=votes&&shown[i]?(votes[i]?'h':'a'):'n',h=Math.round(tr[i]/2);
+    return `<div class="card seat${pr===i?' pr':''}" style="--c:${a.c};left:${SEAT[i][0]}%;top:${SEAT[i][1]}%" tabindex="0" role="button" aria-label="ดูรายละเอียด ${a.n}" onclick="showAgent(${i})" onkeydown="if(event.key==='Enter')showAgent(${i})">${av(i,m)}<div class="nm">${i===L?'<span class="crown">♛</span> ':''}${a.n}</div><div class="sc"><span class="coin"></span><span id="sc${i}">${disp[i]}</span></div>
+    <div class="hr" title="ความไว้ใจที่มีต่อคุณ">${i?'♥'.repeat(h)+'<span style="opacity:.3">'+'♥'.repeat(5-h)+'</span>':''}</div>
+    <div class="vb">${votes&&shown[i]?(votes[i]?'<span class="ok">เห็นด้วย</span>':'<span class="no">ไม่เห็นด้วย</span>'):pr===i?'ผู้เสนอ':''}</div><p class="say">${say[i]||''}</p></div>`;}).join('');
+}
+setInterval(()=>{if(!disp)return;disp.forEach((d,i)=>{if(d!==sc[i]){const f=sc[i]-d;disp[i]+=Math.abs(f)<=1?f:Math.ceil(f/6);const e=$('sc'+i);if(e)e.textContent=disp[i];}});},40);
+const rows=p=>p.map((v,i)=>`<div class="row" style="--c:${A[i].c}"><span>${A[i].n}</span><div class="bar"><i style="width:${v/pot*100}%"></i></div><b>${v}</b></div>`).join('');
+const even=()=>{const b=Math.floor(pot/5),r=Array(5).fill(b);r[0]+=pot-b*5;return r;};
+
+function next(){
+  R++;if(R>N)return finish();
+  rng=mk(seedN+R*7919);tlog=[];reasons=[];
+  ev=evs[R-1];pot=ev.pot;pr=(R+4)%5;votes=null;shown=[];say=[];asked=false;newP=[0,0,0,0,0];pb=[0,0,0,0,0];
+  if(pr===0){prop=even();proposeUI();}
+  else{prop=agentPropose(pr);say[pr]=['','ได้ ฉันขอเสนอแบบนี้','ฉันว่าแบบนี้เป็นธรรมที่สุด','ฟังให้ดีนะ นี่คือข้อเสนอของฉัน','ผมคิดมาแล้ว แบบนี้ลงตัว'][pr];voteUI();}
+  board();
+}
+function agentPropose(p){
+  const o=[1,2,3,4,0].filter(x=>x!==p),r=Array(5).fill(0),t=A[p].t;
+  if(t==='fair')r.fill(20);
+  if(t==='greedy'){const s=o.sort(()=>rng()-.5);r[p]=44;r[s[0]]=22;r[s[1]]=22;r[s[2]]=6;r[s[3]]=6;}
+  if(t==='grudge'){const s=o.sort((a,b)=>G[p][a]-G[p][b]);r[p]=30;r[s[0]]=25;r[s[1]]=25;r[s[2]]=20;}
+  if(t==='opp'){const s=o.sort((a,b)=>sc[a]-sc[b]);r[p]=42;r[s[0]]=22;r[s[1]]=22;r[s[2]]=7;r[s[3]]=7;}
+  if(t==='sly'){const s=o.sort(()=>rng()-.5);r[p]=36;r[s[0]]=30;r[s[1]]=14;r[s[2]]=10;r[s[3]]=10;}
+  if(t==='loyal'){r[p]=26;r[0]=tr[p]>=6?30:12;const e=Math.floor((74-r[0])/3);o.filter(x=>x).forEach(x=>r[x]=e);}
+  if(t==='generous'){const s=o.sort((a,b)=>sc[a]-sc[b]);r[p]=16;r[s[0]]=28;r[s[1]]=24;r[s[2]]=18;r[s[3]]=14;}
+  if(t==='chaos'){const w=o.map(()=>1+rng()*5),sw=w.reduce((a,b)=>a+b),own=15+rng()*30;r[p]=own;o.forEach((x,j)=>r[x]=w[j]/sw*(100-own));}
+  if(t==='timid'){r[p]=22;o.forEach(x=>r[x]=19.5);}
+  if(t==='envy'){r[p]=34;o.forEach(x=>r[x]=16.5);}
+  if(t==='gambler'){const s=o.sort(()=>rng()-.5);r[p]=30;r[s[0]]=40;r[s[1]]=10;r[s[2]]=10;r[s[3]]=10;}
+  if(t==='toady'){const L=leader();r[p]=28;if(L>=0&&L!==p){r[L]=32;o.filter(x=>x!==L).forEach(x=>r[x]=40/3);}else o.forEach(x=>r[x]=18);}
+  {const a=o[rng()*4|0],b=o[rng()*4|0],m=Math.floor(rng()*5);if(r[a]>=m+1){r[a]-=m;r[b]+=m;}}
+  const q=r.map(v=>Math.round(v*pot/100));q[p]+=pot-q.reduce((a,b)=>a+b);return q;
+}
+function decide(i,p,q){
+  const pc=p[i]*100/pot,mx=Math.max(...p)*100/pot,t=A[i].t;
+  if(moodR!==R){moodR=R;mood=mood.map(()=>rng()*8-4);}
+  const s=pc+DF[diff]+(q===0?(tr[i]-5)*.8+pb[i]:0)+mood[i]*.6+quirk[i];
+  const Y=w=>({y:true,why:w}),X=w=>({y:false,why:w}),P=(ok,a,b)=>ok?Y(a):X(b);
+  if(t==='greedy'){if(s>=24)return Y('ส่วนแบ่งสูงพอใจ');if(s>=18&&rng()<.3)return Y('ยังไม่พอใจนักแต่ยอมเสี่ยงรับ');return X('ส่วนแบ่งน้อยเกินไป');}
+  if(t==='fair'){if(mx>50)return X('มีคนได้เกินครึ่ง ไม่ยุติธรรม');if(s<15)return X('ส่วนแบ่งของตัวเองน้อยเกินไป');return Y('ข้อเสนอยุติธรรม ไม่มีใครได้เกินครึ่ง');}
+  if(t==='grudge'){const g=G[i][q];if(g>=3)return X('แค้นผู้เสนอถึงระดับ '+g+' ไม่โหวตให้อีก');const th=g>=2?36:g===1?24:18;
+    return P(s>=th,g?'ส่วนแบ่งสูงพอจะยอมลืมความแค้น (ระดับ '+g+')':'ไม่มีเรื่องขุ่นเคือง ส่วนแบ่งพอรับได้',g?'ยังแค้นผู้เสนอ (ระดับ '+g+') ส่วนแบ่งไม่พอให้ยกโทษ':'ส่วนแบ่งน้อยเกินไป');}
+  if(t==='sly')return P(s>=22,'ส่วนแบ่งสูงพอ','ส่วนแบ่งน้อยกว่าที่เขาต้องการจริง');
+  if(t==='loyal'){const th=tr[i]>=7?11:tr[i]>=4?18:27;return P(s>=th,tr[i]>=7?'ไว้ใจคุณมาก ยอมรับส่วนแบ่งน้อยได้':'ส่วนแบ่งพอรับได้',tr[i]<4?'ยังไม่ไว้ใจคุณ จึงเรียกร้องสูง':'ส่วนแบ่งน้อยเกินไป');}
+  if(t==='generous'){if(mx>60)return X('ผู้เสนอโลภเกินไป (ได้เกิน 60%)');if(s<11)return X('ส่วนแบ่งน้อยเกินไป แม้จะใจกว้าง');return Y('ใจกว้าง ยอมรับส่วนแบ่งน้อยได้');}
+  if(t==='chaos'){const ok=rng()<(s>=25?.85:s>=15?.5:.2);return P(ok,'อารมณ์วันนี้เป็นใจ','อารมณ์วันนี้ไม่เป็นใจ');}
+  if(t==='timid'){const th=R>=7?6:R>=4?11:16;return P(s>=th,R>=7?'ใกล้จบเกม กลัวล่ม จึงยอมรับ':'ส่วนแบ่งพอรับได้',R>=7?'ส่วนแบ่งน้อยเกินไปแม้จะกลัวล่ม':'ช่วงต้นเกม ยังเรื่องมาก');}
+  if(t==='envy'){const ok=(pc>=mx-3&&s>=13)||s>=30;return P(ok,'ได้ใกล้เคียงคนที่ได้มากที่สุด',pc<mx-3?'มีคนได้มากกว่าเขามากเกินไป':'ส่วนแบ่งน้อยเกินไป');}
+  if(t==='gambler'){const ok=s>=28||(mx>=45&&s>=12);return P(ok,mx>=45?'มีคนได้ก้อนโต ชอบความเสี่ยง':'ได้ก้อนใหญ่พอใจ','ข้อเสนอธรรมดาเกินไป ไม่น่าเสี่ยง');}
+  if(t==='toady'){const L=leader(),isL=L>=0&&L===q;return P(isL?s>=9:s>=21,isL?'ผู้เสนอเป็นผู้นำ จึงสนับสนุน':'ส่วนแบ่งสูงพอ',isL?'ส่วนแบ่งน้อยเกินไปแม้ผู้เสนอเป็นผู้นำ':'ผู้เสนอไม่ใช่ผู้นำ จึงเรียกร้องสูง');}
+  const ok=s>=21||(s>=15&&behind(i));
+  return P(ok,s<21?'ตามหลังอยู่ จึงยอมรับน้อยลง':'ส่วนแบ่งสูงพอ',behind(i)?'ตามหลังแต่ส่วนแบ่งยังน้อยไป':'ตัวเองนำอยู่ จึงต้องการมากกว่านี้');
+}
+
+function proposeUI(){
+  const tot=()=>prop.reduce((a,b)=>a+b),o=PO.map((v,i)=>v?`${A[i].n} (≥${v})`:'').filter(Boolean),canP=R+5<=N;
+  $('stage').innerHTML=`<h2>ถึงตาคุณเสนอ: แบ่ง ${pot} เหรียญ</h2><p class="note">กด "ถาม" เพื่อฟังความต้องการ (บางคนโกหก) หรือกด "สัญญา" เพื่อซื้อใจทันที: วนค่า - → ≥10 → ≥20 → - สัญญาจะถูกตรวจ <b>ตอนคุณกดเสนอครั้งหน้า (${canP?'รอบที่ '+(R+5):'ไม่มีรอบหน้าแล้ว จึงสัญญาไม่ได้'})</b> รักษาสัญญา ไว้ใจ +1 ผิดสัญญา −2</p>${o.length?`<p class="note"><b>สัญญาที่ค้างอยู่ ตรวจตอนกดเสนอรอบนี้ ต้องให้ถึง:</b> ${o.join(', ')}</p>`:''}`+
+   prop.map((v,i)=>`<div class="row" style="--c:${A[i].c}"><span>${A[i].n}</span><input type="range" min="0" max="${pot}" value="${v}" id="s${i}" aria-label="ส่วนแบ่งของ ${A[i].n}"><b id="v${i}">${v}</b>${i?`<button onclick="ask(${i})">ถาม</button><button onclick="prom(${i})" ${canP?'':'disabled'}>สัญญา ${newP[i]?'≥'+newP[i]:'-'}</button>`:''}</div>`).join('')+
+   `<p class="note" id="left"></p><p class="note no" id="warn"></p><div class="btns"><button onclick="prop=even();proposeUI()">แบ่งเท่ากัน</button><button class="go" id="sub" onclick="submitP()">เสนอข้อเสนอนี้</button></div>`;
+  prop.forEach((_,i)=>$('s'+i).oninput=e=>{prop[i]=+e.target.value;upd();});
+  upd();
+  function upd(){prop.forEach((v,i)=>$('v'+i).textContent=v);const l=pot-tot();$('left').textContent=l===0?`รวมครบ ${pot} แล้ว`:l>0?`ยังเหลืออีก ${l} เหรียญที่ต้องแบ่ง`:`เกินมา ${-l} เหรียญ ต้องลดลง`;$('sub').disabled=l!==0;
+    const bad=PO.map((v,i)=>v&&prop[i]<v?`${A[i].n} (ต้อง ≥${v} แต่ให้ ${prop[i]})`:'').filter(Boolean);$('warn').textContent=bad.length?'ถ้าเสนอแบบนี้จะผิดสัญญากับ: '+bad.join(', '):'';}
+}
+function prom(i){let n=(newP[i]+10)%30;const others=newP.reduce((a,b)=>a+b,0)-newP[i];if(others+n>70)n=0;newP[i]=n;proposeUI();}
+function ask(i){
+  const t=A[i].t,k=x=>Math.round(x*pot/100);let l;
+  if(t==='greedy')l=`ไม่ต่ำกว่า ${k(28)} เหรียญ ไม่งั้นไม่เอา!`;
+  else if(t==='fair')l=`${k(15)} ก็พอ แต่อย่าให้ใครได้เกินครึ่งนะ`;
+  else if(t==='grudge'){const g=G[i][0];l=g>=3?'ฉันไม่ให้อภัยเธออีกแล้ว ไม่ว่าจะให้เท่าไรก็ไม่โหวต':g>=2?`ครั้งก่อนเธอให้ฉันน้อยนัก ต้อง ${k(36)} ขึ้นไป`:g===1?`ฉันยังติดใจอยู่ ต้อง ${k(24)} ขึ้นไป`:`${k(18)} เป็นอย่างต่ำ`;}
+  else if(t==='sly')l=`${k(12)} ก็พอแล้วจ้ะ ไม่เรื่องมากหรอก`;
+  else if(t==='loyal')l=tr[i]>=6?`${k(10)} ก็พอ เราเป็นพวกเดียวกัน`:`${k(22)} ถึงจะคุยกัน`;
+  else if(t==='generous')l=`${k(10)} ก็พอ แบ่งให้คนอื่นด้วยนะ`;
+  else if(t==='chaos')l=`วันนี้อยากได้ ${k(8+rng()*24|0)} เหรียญ… มั้ง`;
+  else if(t==='timid')l=`${k(14)} ก็ได้ อย่าให้ล่มเลยนะ`;
+  else if(t==='envy')l=`อย่าให้ใครได้มากกว่าฉันแล้วกัน`;
+  else if(t==='gambler')l=`ไม่ต่ำกว่า ${k(28)} หรือไม่ก็ให้ใครสักคนได้ก้อนโตไปเลย`;
+  else if(t==='toady')l=`ผมไม่เรื่องมากหรอก ถ้าผู้นำเห็นด้วย`;
+  else l=behind(i)?`ตอนนี้ผมตามอยู่ ${k(15)} ก็เอา`:`ผมนำอยู่ ต้อง ${k(21)} ถึงจะคุยกัน`;
+  say[i]=l;board();
+}
+function submitP(){
+  PO.forEach((v,i)=>{if(v){if(prop[i]>=v){chT(i,1,`คุณรักษาสัญญา (ให้ ${prop[i]} ไม่ต่ำกว่า ${v})`);say[i]='ขอบคุณที่รักษาสัญญา';}else{chT(i,-2,`คุณผิดสัญญา (ให้ ${prop[i]} น้อยกว่า ${v})`);say[i]='ผิดสัญญา! ฉันจะจำไว้';}}});
+  PO=newP.slice();pb=newP.map(v=>Math.min(6,v*.3));
+  resolve(null);
+}
+
+function voteUI(){
+  const cd=asked;
+  $('stage').innerHTML=`<h2>${A[pr].n} เสนอการแบ่ง ${pot} เหรียญ</h2>${rows(prop)}<p class="note">คุณจะได้ ${prop[0]} เหรียญ ถ้าข้อเสนอผ่าน โหวตเห็นด้วยจะเพิ่มความไว้ใจ โหวตไม่เห็นด้วยจะลดลง</p>
+  <div class="btns"><button onclick="more(5)" ${cd?'disabled':''}>ขอเพิ่ม 5</button><button onclick="more(10)" ${cd?'disabled':''}>ขอเพิ่ม 10</button><button class="go" onclick="resolve(true)">เห็นด้วย</button><button onclick="resolve(false)">ไม่เห็นด้วย</button></div>
+  <p class="note">ขอเพิ่มได้รอบละครั้ง เหรียญที่เพิ่มหักจากส่วนของผู้เสนอ</p>`;
+}
+function more(n){
+  if(asked)return;asked=true;
+  const t=A[pr].t,after=prop[pr]-n,ap=after*100/pot;
+  const ok=after>=0&&(t==='fair'?ap>=20:t==='greedy'?ap>=40&&rng()<.35:t==='grudge'?G[pr][0]<2&&ap>=22:t==='generous'?ap>=14:t==='loyal'?(tr[pr]>=6&&ap>=18):t==='sly'?ap>=32&&rng()<.5:t==='chaos'?rng()<.5:t==='timid'?ap>=16:t==='envy'?ap>=28:t==='gambler'?rng()<.4:t==='toady'?ap>=24:ap>=30);
+  if(ok){prop[pr]-=n;prop[0]+=n;say[pr]='ก็ได้ ฉันยอมให้';}
+  else say[pr]=t==='grudge'&&G[pr][0]>=2?'ฝันไปเถอะ':'ไม่ได้ ข้อเสนอนี้ก็ดีแล้ว';
+  voteUI();board();
+}
+
+function resolve(y){
+  if(busy)return;busy=true;
+  if(pr!==0)chT(pr,y?1:-1,y?'คุณโหวตเห็นด้วยกับข้อเสนอของเขา':'คุณโหวตไม่เห็นด้วยกับข้อเสนอของเขา');
+  reasons=[];
+  votes=prop.map((_,i)=>{if(i===pr){reasons[i]=i===0?'คุณเป็นผู้เสนอ':'เป็นผู้เสนอเอง';return true;}if(i===0){reasons[0]=y?'คุณโหวตเห็นด้วย':'คุณโหวตไม่เห็นด้วย';return y;}const d=decide(i,prop,pr);reasons[i]=d.why;return d.y;});
+  const yes=votes.filter(Boolean).length;
+  votes.forEach((v,i)=>{if(i&&i!==pr)say[i]=(v?'ตกลง':(NOSAY[A[i].t]||'ไม่เอา'))+`<small>${reasons[i]}</small>`;});
+  $('stage').innerHTML=`<h2>กำลังนับคะแนน...</h2>${rows(prop)}`;
+  shown=[];let k=0;
+  const iv=setInterval(()=>{shown[k]=true;k++;board();if(k>=5){clearInterval(iv);settle(yes);}},420);
+}
+const clampT=v=>Math.max(0,Math.min(10,v));
+function chT(i,d,why){const o=tr[i];tr[i]=clampT(o+d);const a=tr[i]-o;tlog.push(`<b style="color:${A[i].c}">${A[i].n}</b> ${a>0?'▲ +'+a:a<0?'▼ '+a:'• ไม่เปลี่ยน (ถึงขีดสุด/ต่ำสุดแล้ว)'} — ${why}`);}
+function histHTML(){
+  return hist.map((h,n)=>`<li><details${n===hist.length-1?' open':''}><summary>รอบ ${h.R} (${h.ev}): ${A[h.pr].n} เสนอ ${h.pass?'<span class="ok">ผ่าน</span>':'<span class="no">ตก</span>'} (${h.yes}–${5-h.yes})${h.extra?' · '+h.extra:''}</summary><div class="hl">${A.map((a,i)=>`<div><b style="color:${a.c}">${a.n}</b> ข้อเสนอให้ ${h.prop[i]} → ${h.votes[i]?'<span class="ok">เห็นด้วย</span>':'<span class="no">ไม่เห็นด้วย</span>'} · ${h.reasons[i]} · คะแนนรวม ${h.sc[i]}</div>`).join('')}${h.tl.length?`<div class="tl"><b>ความไว้ใจ:</b><br>${h.tl.join('<br>')}</div>`:''}</div></details></li>`).join('');
+}
+function settle(yes){
+  const pass=yes>=3;let extra='';
+  if(pass){
+    stat.ok++;
+    prop.forEach((v,i)=>{sc[i]+=v;ST[i].got+=v;if(i&&i!==pr){const pc=v*100/pot;if(pc<8){G[i][pr]++;if(pr===0)chT(i,-1,'คุณให้เขาน้อยเกินไป (ต่ำกว่า 8% ของกอง)');}else if(pc>=20){G[i][pr]=Math.max(0,G[i][pr]-1);if(pr===0)chT(i,1,'คุณแบ่งให้อย่างเป็นธรรม (ตั้งแต่ 20% ของกอง)');}}});
+  }else stat.fail++;
+  votes.forEach((v,i)=>{if(i!==pr){v?ST[i].yes++:ST[i].no++;}});
+  ST[pr].prop++;if(pass)ST[pr].pass++;
+  if(ev.k==='tax'){const l=leader();if(l>=0){sc[l]=Math.max(0,sc[l]-10);extra=`${A[l].n}ถูกหักภาษี 10 เหรียญ`;}}
+  if(ev.k==='aid'){const l=last();if(l>=0){sc[l]+=10;extra=`${A[l].n}ได้รับกองทุนช่วยเหลือ 10 เหรียญ`;}}
+  hist.push({R,ev:ev.t,pr,prop:prop.slice(),pass,yes,votes:votes.slice(),reasons:reasons.slice(),extra,tl:tlog.slice(),sc:sc.slice()});
+  $('hist').innerHTML=histHTML();
+  $('stage').innerHTML=`<h2>${pass?'<span class="ok">ข้อเสนอผ่าน</span>':'<span class="no">ข้อเสนอตก เหรียญรอบนี้สูญหมด</span>'} (${yes}–${5-yes})</h2>${rows(pass?prop:prop.map(()=>0))}${extra?`<p class="note">${extra}</p>`:''}
+  <details open><summary class="note"><b>เหตุผลการโหวต</b></summary>${A.map((a,i)=>`<p class="note"><b style="color:${a.c}">${a.n}</b> ${votes[i]?'<span class="ok">เห็นด้วย</span>':'<span class="no">ไม่เห็นด้วย</span>'} — ${reasons[i]}</p>`).join('')}</details>
+  ${tlog.length?`<p class="note"><b>ความไว้ใจเปลี่ยนแปลง</b></p>${tlog.map(x=>`<p class="note">${x}</p>`).join('')}`:''}
+  <div class="btns"><button class="go" onclick="busy=false;next()">${R<N?'ไปรอบถัดไป':'ดูผลสรุป'}</button></div>`;
+  board();
+}
+function finish(){
+  pr=-1;votes=null;say=[];ev=null;R=N+1;board();updateCmp();
+  const rk=sc.map((_,i)=>i).sort((a,b)=>sc[b]-sc[a]),me=rk.indexOf(0)+1;
+  const title=['','เจ้าพ่อโต๊ะเจรจา','นักเจรจามือฉมัง','คนกลางที่พอไปได้','ผู้ถูกกลืนในสภา','ผู้ถูกเอาเปรียบ'][me];
+  let b='';try{b=+localStorage.getItem('hc_best_'+diff)||0;if(sc[0]>b){b=sc[0];localStorage.setItem('hc_best_'+diff,b);}}catch(e){}
+  $('stage').innerHTML=`<h2>${me===1?'คุณชนะ!':`คุณได้อันดับที่ ${me}`} — ${title}</h2>
+  <p class="note">ข้อเสนอผ่าน ${stat.ok} ครั้ง ตก ${stat.fail} ครั้ง ระดับ${diff} สถิติสูงสุด ${b} เหรียญ</p>
+  ${rk.map((i,k)=>`<div class="row" style="--c:${A[i].c}"><span>${k+1}. ${A[i].n}</span><div class="bar"><i style="width:${sc[i]/Math.max(...sc,1)*100}%"></i></div><b>${sc[i]}</b></div>`).join('')}
+  ${statTable()}<p class="note"><b>เปิดเผยนิสัยและความไว้ใจสุดท้าย:</b></p>
+  ${A.slice(1).map((a,j)=>`<p class="note"><b style="color:${a.c}">${a.n}</b> (${a.tag}) ${'♥'.repeat(Math.round(tr[j+1]/2))} ${a.d}</p>`).join('')}
+  <div class="btns"><button class="go" onclick="$('seed').value='';start()">เล่นอีกครั้ง (seed ใหม่)</button><button onclick="$('seed').value=curSeed;start()">เล่นซ้ำ seed เดิม</button><button onclick="showCmp()">เปรียบเทียบกลยุทธ์</button><button onclick="toMenu()">เมนู</button></div>`;
+}
+
+/* ===== Stats, modal, agent detail, comparison, tutorial ===== */
+function statTable(){
+  return `<p class="note"><b>สถิติการเจรจาเกมนี้ (Seed ${curSeed.replace(/[<>&]/g,'')}):</b></p><div style="overflow:auto"><table class="tb"><tr><th>ผู้เล่น</th><th>เห็นด้วย</th><th>ไม่เห็นด้วย</th><th>อัตรายอมรับ</th><th>ข้อเสนอผ่าน</th><th>เหรียญเฉลี่ย/รอบ</th></tr>`+
+  A.map((a,i)=>{const s=ST[i],t=s.yes+s.no;return `<tr><td style="color:${a.c}"><b>${a.n}</b>${a.tag?' ('+a.tag+')':''}</td><td>${s.yes}</td><td>${s.no}</td><td>${t?Math.round(s.yes/t*100)+'%':'-'}</td><td>${s.pass}/${s.prop}</td><td>${(sc[i]/N).toFixed(1)}</td></tr>`}).join('')+`</table></div>`;
+}
+const loadCmp=()=>{try{return JSON.parse(localStorage.getItem('hc_cmp')||'{}')}catch(e){return{}}};
+function updateCmp(){
+  const c=loadCmp();
+  for(let i=1;i<5;i++){const t=A[i].t,o=c[t]||{g:0,yes:0,no:0,prop:0,pass:0,sc:0},s=ST[i];o.g++;o.yes+=s.yes;o.no+=s.no;o.prop+=s.prop;o.pass+=s.pass;o.sc+=sc[i];c[t]=o;}
+  try{localStorage.setItem('hc_cmp',JSON.stringify(c));}catch(e){}
+}
+function openM(h,noClose){$('mbox').innerHTML=h+(noClose?'':'<div class="btns"><button onclick="closeM()">ปิด</button></div>');$('modal').hidden=false;}
+function closeM(){$('modal').hidden=true;}
+function showAgent(i){
+  if(!ST)return;
+  const a=A[i],s=ST[i],t=s.yes+s.no,fin=R>N,rev=fin||($('rev')&&$('rev').checked);
+  const rs=hist.filter(h=>h.pr!==i).slice(-6).map(h=>`<li>รอบ ${h.R}: ${h.votes[i]?'<span class="ok">เห็นด้วย</span>':'<span class="no">ไม่เห็นด้วย</span>'} (ข้อเสนอให้ ${h.prop[i]}) — ${h.reasons[i]}</li>`).join('');
+  openM(`<h2 style="color:${a.c}">${av(i,'n')}${a.n}</h2>`+
+   (i?`<p><b>กลยุทธ์:</b> ${rev?a.tag:'ปริศนา (ติ๊ก "เปิดเผยนิสัยระหว่างเล่น" ในเมนู หรือรอดูตอนจบเกม)'}</p><p><b>พฤติกรรม:</b> ${rev?a.d:'สังเกตจากคำพูด ข้อเสนอ และเหตุผลการโหวตด้านล่าง'}</p>`:'<p><b>คุณ</b> ผู้เล่น</p>')+
+   `<p><b>คะแนน:</b> ${sc[i]} เหรียญ${i?` · <b>ความไว้ใจที่มีต่อคุณ:</b> ${tr[i]}/10 ${'♥'.repeat(Math.round(tr[i]/2))}`:''}</p>`+
+   (rev&&a.t==='grudge'?`<p><b>ระดับความแค้นต่อคุณ:</b> ${G[i][0]} (ถึง 3 = ไม่โหวตให้อีก)</p>`:'')+
+   `<p><b>โหวตแล้ว:</b> เห็นด้วย ${s.yes} · ไม่เห็นด้วย ${s.no}${t?` (ยอมรับ ${Math.round(s.yes/t*100)}%)`:''} · <b>ข้อเสนอของเขา:</b> ผ่าน ${s.pass}/${s.prop}</p>`+
+   (rs?`<p><b>การโหวตล่าสุด</b></p><ul class="rl">${rs}</ul>`:'<p class="note">ยังไม่มีประวัติการโหวต</p>'));
+}
+function showCmp(){
+  const c=loadCmp(),keys=Object.keys(TRAITS),rows=keys.map(k=>{const o=c[k],v=o?o.yes+o.no:0;return{k,o,acc:v?o.yes/v:null,avg:o&&o.g?o.sc/o.g:null,fail:o&&o.prop?(o.prop-o.pass)/o.prop:null};});
+  const best=(f,mx)=>{const xs=rows.filter(r=>r[f]!==null);if(!xs.length)return null;return xs.reduce((a,b)=>(mx?b[f]>a[f]:b[f]<a[f])?b:a).k;};
+  const bA=best('acc',1),bS=best('avg',1),bF=best('fail',1);
+  openM(`<h2>รายละเอียดและเปรียบเทียบกลยุทธ์</h2><p class="note">สถิติสะสมจากเกมที่เล่นจนจบบนเครื่องนี้ (เฉพาะ 4 ฝ่ายที่ไม่ใช่คุณ)</p><div style="overflow:auto"><table class="tb"><tr><th>กลยุทธ์</th><th>เกม</th><th>ยอมรับข้อเสนอ</th><th>คะแนนเฉลี่ย</th><th>ข้อเสนอตก</th><th>จุดเด่น</th></tr>`+
+  rows.map(r=>{const t=TRAITS[r.k],b=[r.k===bA?'ยอมรับง่ายสุด':'',r.k===bS?'คะแนนดีสุด':'',r.k===bF?'ทำล้มบ่อยสุด':''].filter(Boolean).join(', ');
+    return `<tr><td><b>${t.tag}</b><br><small>${t.d}</small></td><td>${r.o?r.o.g:0}</td><td>${r.acc===null?'-':Math.round(r.acc*100)+'%'}</td><td>${r.avg===null?'-':r.avg.toFixed(1)}</td><td>${r.fail===null?'-':Math.round(r.fail*100)+'%'}</td><td>${b||'-'}</td></tr>`}).join('')+
+  `</table></div><div class="btns"><button onclick="try{localStorage.removeItem('hc_cmp')}catch(e){}showCmp()">ล้างสถิติ</button><button onclick="closeM()">ปิด</button></div>`,true);
+}
+const TUT=[
+ ['เป้าหมาย','มี 10 รอบ ในแต่ละรอบมีเหรียญกองกลางให้แบ่งกัน คนที่มีเหรียญรวมมากที่สุดเมื่อจบรอบที่ 10 คือผู้ชนะ'],
+ ['ผลัดกันเสนอ','ผู้เสนอหมุนไปตามที่นั่ง รอบละ 1 คน คุณเป็นผู้เสนอในรอบที่ 1 และ 6 ส่วนรอบอื่นผู้เล่นอีก 4 ฝ่ายเป็นคนเสนอ'],
+ ['วิธีเสนอแบ่ง','ตอนถึงตาคุณ เลื่อนแถบให้ผลรวมเท่ากับกองกลางพอดี กด "ถาม" เพื่อฟังความต้องการของแต่ละคน (บางคนพูดไม่ตรงกับที่ทำ) หรือกด "แบ่งเท่ากัน" เพื่อเริ่มจากส่วนที่เป็นธรรม'],
+ ['วิธีโหวต','ข้อเสนอต้องได้ 3 จาก 5 เสียงจึงผ่าน ผู้เสนอโหวตให้ตัวเองเสมอ ถ้าไม่ผ่านเหรียญรอบนั้นสูญหมด ตอนคนอื่นเสนอ คุณขอเพิ่มได้ 5 หรือ 10 เหรียญ (รอบละครั้ง) แล้วโหวตเห็นด้วยหรือไม่ก็ได้'],
+ ['คำมั่นสัญญา','ตอนคุณเสนอ กด "สัญญา" ที่คนไหนก็ได้ วนค่า - → ≥10 → ≥20 เพื่อซื้อใจให้โหวตรอบนี้ สัญญาจะถูกตรวจตอนคุณเสนอครั้งหน้า (ห่างไป 5 รอบ) ถ้าให้ถึงตามสัญญา ความไว้ใจ +1 ถ้าไม่ถึง −2 รอบที่ 6 ไม่มีรอบหน้าแล้ว จึงสัญญาไม่ได้'],
+ ['ความไว้ใจ (♥)','หัวใจใต้ชื่อคือความไว้ใจที่แต่ละคนมีต่อคุณ ยิ่งสูงยิ่งยอมรับส่วนแบ่งน้อยลง เปลี่ยนเมื่อคุณโหวตช่วยหรือไม่ช่วย แบ่งเป็นธรรมหรือโลภ และรักษาหรือผิดสัญญา ทุกครั้งที่เปลี่ยนจะมีเหตุผลแสดงใต้ผลโหวต'],
+ ['อ่านนิสัยคู่แข่ง','ทุกเกมสุ่ม 4 คู่แข่งพร้อมนิสัยซ่อนอยู่ (มี 12 แบบ) ดูเหตุผลการโหวต ประวัติ และคลิกที่ตัวละครเพื่อดูรายละเอียด ส่วนเหตุการณ์ประจำรอบจะเปลี่ยนกองกลางหรือมีภาษี/กองทุน ใส่ Seed ในเมนูเพื่อเล่นเงื่อนไขเดิมซ้ำ']];
+function showTut(n){
+  n=n||0;const t=TUT[n];
+  openM(`<p class="note">บทสอนเล่น ${n+1}/${TUT.length}</p><h2>${t[0]}</h2><p>${t[1]}</p><div class="btns"><button ${n?'':'disabled'} onclick="showTut(${n-1})">ย้อนกลับ</button>${n<TUT.length-1?`<button class="go" onclick="showTut(${n+1})">ถัดไป</button>`:''}<button onclick="closeM()">${n<TUT.length-1?'ข้าม':'เข้าใจแล้ว'}</button></div>`,true);
+}
+$('modal').onclick=e=>{if(e.target===$('modal'))closeM()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeM()});
+diffUI();roster();
+/* ===== Effects: sound, coin rain, confetti, floating gains ===== */
+(function(){
+  const fx=document.createElement('div');fx.id='fx';fx.setAttribute('aria-hidden','true');document.body.appendChild(fx);
+  const calm=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  let on=true,AC;try{on=localStorage.getItem('hc_snd')!=='0'}catch(e){}
+  const btn=()=>{const b=$('snd');if(b)b.textContent=on?'\u{1F50A}':'\u{1F507}'};
+  window.toggleSnd=()=>{on=!on;try{localStorage.setItem('hc_snd',on?'1':'0')}catch(e){}btn();tone(660,.1)};btn();
+  function tone(f,d,t,v,at){if(!on)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain(),s=AC.currentTime+(at||0);o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(v||.07,s);g.gain.exponentialRampToValueAtTime(.0001,s+d);o.connect(g);g.connect(AC.destination);o.start(s);o.stop(s+d+.02)}catch(e){}}
+  const jingle=(a,t)=>a.forEach((f,i)=>tone(f,.28,t||'sine',.07,i*.11));
+  const kill=(el,ms)=>setTimeout(()=>el.remove(),ms);
+  function rain(n){if(calm)return;for(let i=0;i<n;i++){const e=document.createElement('span'),d=1.6+Math.random()*1.4;e.className='rain';e.style.left=Math.random()*100+'%';e.style.animationDuration=d+'s';e.style.animationDelay=Math.random()*.8+'s';e.innerHTML='<span class="coin"></span>';fx.appendChild(e);kill(e,(d+1)*1000)}}
+  function confetti(n){if(calm)return;const C=['#E3B54A','#2F9E8F','#D1495B','#6E9BE0','#7A5CC7','#fff'];for(let i=0;i<n;i++){const e=document.createElement('span'),d=2+Math.random()*2;e.className='cf';e.style.left=Math.random()*100+'%';e.style.background=C[i%C.length];e.style.animationDuration=d+'s';e.style.animationDelay=Math.random()*.9+'s';fx.appendChild(e);kill(e,(d+1)*1000)}}
+  function gains(){if(calm)return;const seats=$('board').querySelectorAll('.seat');prop.forEach((v,i)=>{const el=seats[i];if(!v||!el)return;const r=el.getBoundingClientRect(),e=document.createElement('span');e.className='fl';e.textContent='+'+v;e.style.left=r.left+r.width/2+'px';e.style.top=r.top+'px';e.style.animationDelay=i*.08+'s';fx.appendChild(e);kill(e,1700)})}
+  document.addEventListener('click',e=>{if(e.target.closest('button')&&e.target.id!=='snd')tone(520,.05,'triangle',.04)});
+  let lastN=0;const _board=board;
+  board=function(){_board.apply(this,arguments);const n=shown?shown.length:0;if(n>lastN&&votes){const v=votes[n-1];tone(v?660:220,.12,v?'sine':'sawtooth',.05)}lastN=n};
+  const _settle=settle;
+  settle=function(yes){_settle(yes);
+    if(yes>=3){jingle([523,659,784]);rain(14);gains()}
+    else{jingle([196,147],'sawtooth');const b=$('board');b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake')}};
+  const _finish=finish;
+  finish=function(){_finish();
+    if(sc[0]>=Math.max(...sc)){jingle([523,659,784,1047,784,1047]);confetti(90);rain(20)}else jingle([392,330,262],'triangle')};
+})();
+
+/* ===== Chill lo-fi background music (generated live with Web Audio) ===== */
+(function(){
+  const BPM=72,E=60/BPM/2;
+  const CH=[{b:48,n:[55,59,64,67,74]},{b:45,n:[57,60,64,67,71]},{b:41,n:[53,57,60,64,67]},{b:43,n:[55,59,62,65,69]}];
+  const PENT=[72,74,76,79,81,84,79,76];
+  const F=m=>440*Math.pow(2,(m-69)/12);
+  let ctx,bus,noise,timer,nextT=0,step=0,playing=false,want=true,last=-1;
+  try{want=localStorage.getItem('hc_music')!=='0'}catch(e){}
+  const btn=()=>{const b=$('mus');if(b)b.classList.toggle('off',!(want&&playing))};
+  function init(){
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return false;
+    ctx=new AC();
+    const master=ctx.createGain();master.gain.value=.55;
+    const lp=ctx.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;lp.Q.value=.4;
+    const dl=ctx.createDelay(1);dl.delayTime.value=E*3;const fb=ctx.createGain();fb.gain.value=.32;const wet=ctx.createGain();wet.gain.value=.3;
+    bus=ctx.createGain();bus.connect(lp);bus.connect(dl);dl.connect(fb);fb.connect(dl);dl.connect(wet);wet.connect(lp);lp.connect(master);master.connect(ctx.destination);
+    const len=ctx.sampleRate;noise=ctx.createBuffer(1,len,ctx.sampleRate);const d=noise.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+    return true;
+  }
+  function osc(type,f,t,att,hold,rel,vol,det){
+    const o=ctx.createOscillator(),g=ctx.createGain();o.type=type;o.frequency.value=f;if(det)o.detune.value=det;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+att);g.gain.setValueAtTime(vol,t+att+hold);g.gain.exponentialRampToValueAtTime(.0001,t+att+hold+rel);
+    o.connect(g);g.connect(bus);o.start(t);o.stop(t+att+hold+rel+.05);
+  }
+  function play(st,t){
+    const c=CH[Math.floor(st/16)%CH.length],k=st%16,sw=(st%2)?E*.12:0,tt=t+sw;
+    if(k===0){c.n.forEach((m,i)=>{osc('sine',F(m),tt,1.4,E*10,E*5,.028,0);osc('triangle',F(m),tt,1.4,E*10,E*5,.014,i*2-4)});}
+    if(k===0||k===6||k===8)osc('sine',F(c.b),tt,.02,E*2.2,E*2,k===6?.07:.11,0);
+    if(k===0||k===8||k===11){const o=ctx.createOscillator(),g=ctx.createGain();o.frequency.setValueAtTime(110,tt);o.frequency.exponentialRampToValueAtTime(42,tt+.12);g.gain.setValueAtTime(.16,tt);g.gain.exponentialRampToValueAtTime(.0001,tt+.28);o.connect(g);g.connect(bus);o.start(tt);o.stop(tt+.3);}
+    if(k%4===2){const n=ctx.createBufferSource(),g=ctx.createGain(),hp=ctx.createBiquadFilter();n.buffer=noise;hp.type='highpass';hp.frequency.value=6500;g.gain.setValueAtTime(.022,tt);g.gain.exponentialRampToValueAtTime(.0001,tt+.07);n.connect(hp);hp.connect(g);g.connect(bus);n.start(tt,Math.random()*.5,.1);}
+    if(Math.random()<(k%2?.22:.34)&&k>1){let i=Math.floor(Math.random()*PENT.length);if(last>=0&&Math.random()<.6)i=Math.max(0,Math.min(PENT.length-1,last+(Math.random()<.5?-1:1)));last=i;osc('sine',F(PENT[i]),tt,.01,.02,.9,.05,0);osc('triangle',F(PENT[i]+12),tt,.01,0,.5,.012,0);}
+  }
+  function tick(){if(!ctx)return;while(nextT<ctx.currentTime+.6){play(step,nextT);nextT+=E;step++}}
+  window.startMusic=function(){
+    if(!want||playing)return;
+    try{if(!ctx&&!init())return;ctx.resume&&ctx.resume();nextT=ctx.currentTime+.15;playing=true;tick();timer=setInterval(tick,120);}catch(e){playing=false}
+    btn();
+  };
+  window.stopMusic=function(){playing=false;clearInterval(timer);try{ctx&&ctx.suspend&&ctx.suspend()}catch(e){}btn();};
+  window.toggleMus=function(){want=!want;try{localStorage.setItem('hc_music',want?'1':'0')}catch(e){}want?startMusic():stopMusic();btn();};
+  document.addEventListener('visibilitychange',()=>{if(!ctx||!want)return;if(document.hidden){clearInterval(timer);try{ctx.suspend()}catch(e){}}else if(playing){try{ctx.resume();nextT=ctx.currentTime+.15;timer=setInterval(tick,120)}catch(e){}}});
+  const _begin=begin;begin=function(){_begin();startMusic()};
+  btn();
+})();
+</script>
+</body>
+</html>
